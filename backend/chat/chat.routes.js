@@ -58,6 +58,33 @@ router.get('/unread/:userId', async (req, res) => {
 });
 
 
+// router.get('/notifications/:userId', async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+
+//     const messages = await Message.find({
+//       recipientId: userId
+//     })
+//       .sort({ timestamp: -1 });
+
+//     const notifications = messages.map(msg => ({
+//       _id: msg._id,
+//       senderId: msg.senderId._id,
+//       senderName: msg.senderId.name,
+//       campaignId: msg.campaignId._id,
+//       campaignTitle: msg.campaignId.title,
+//       content: msg.content,
+//       timestamp: msg.timestamp,
+//       read: msg.read 
+//     }));
+
+//     res.json({ notifications });
+//   } catch (err) {
+//     console.error("Error fetching notifications:", err);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
+
 router.get('/notifications/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -69,20 +96,24 @@ router.get('/notifications/:userId', async (req, res) => {
       .populate("senderId", "name")
       .sort({ timestamp: -1 });
 
-    const notifications = messages.map(msg => ({
-      _id: msg._id,
-      senderId: msg.senderId._id,
-      senderName: msg.senderId.name,
-      campaignId: msg.campaignId._id,
-      campaignTitle: msg.campaignId.title,
-      content: msg.content,
-      timestamp: msg.timestamp,
-      read: msg.read 
-    }));
+    // Only include messages with both populated
+    const notifications = messages
+      .filter(msg => msg.senderId && msg.campaignId)
+      .map(msg => ({
+        _id: msg._id,
+        senderId: msg.senderId._id,
+        senderName: msg.senderId.name,
+        campaignId: msg.campaignId._id,
+        campaignTitle: msg.campaignId.title,
+        content: msg.content,
+        timestamp: msg.timestamp,
+        read: msg.read,
+      }));
 
     res.json({ notifications });
   } catch (err) {
-    console.error("Error fetching notifications:", err);
+    console.error("Error fetching notifications:", err.message);
+    console.error(err.stack);
     res.status(500).json({ error: "Server error" });
   }
 });
